@@ -1,103 +1,42 @@
-import numpy as np
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
-from scipy import stats as st
-import tensorflow as tf
-# from sklearn.naive_bayes import GaussianNB
-# from sklearn.neural_network import 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+import joblib
+import os
 
+# URLs for red and white wine datasets
+url_red = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+url_white = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv"
 
+# Load data
+df_red = pd.read_csv(url_red, sep=";")
+df_white = pd.read_csv(url_white, sep=";")
 
-# Load the data
-wine_red = pd.read_csv("data/winequality-red.csv", sep = ";")
-wine_white = pd.read_csv("data/winequality-white.csv", sep = ";")
+# Add type column: 0 for red, 1 for white (optional, not used for prediction)
+df_red["wine_type"] = 0
+df_white["wine_type"] = 1
 
-# # View first five samples of the Red wine data
+# Combine datasets
+df = pd.concat([df_red, df_white], axis=0, ignore_index=True)
 
-# print(wine_red_df.head())
-# print(wine_white_df.head())
+# Separate features and target
+X = df.drop("quality", axis=1)
+y = df["quality"]
 
-# # Split the the whole data into test and train
-# X_train_red, X_test_red, y_train_red, y_test_red = train_test_split(wine_red_df.iloc[:, :-1], wine_red_df.iloc[:, -1],
-#                                                     test_size=0.2, random_state=1)
-# X_train_white, X_test_white, y_train_white, y_test_white = train_test_split(wine_white_df.iloc[:, :-1], wine_white_df.iloc[:, -1],
-#                                                     test_size=0.2, random_state=1)
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Adding the new column wine type 
-def boxcox_trans(data):
-    for i in range(data.shape[1]):
-        data.iloc[:, i], _ = st.boxcox(data.iloc[:, i])
-    return data
+# Train Random Forest
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
 
-# boxcox
-red_trans = wine_red.copy(deep = True)
-# for i in range(red_trans.iloc[:,:-1].shape[1]):
-#     red_trans.iloc[:,:-1].iloc[:,i]=st.boxcox(red_trans.iloc[:,:-1].iloc[:,i])
-boxcox_trans()
-white_trans = wine_white.copy(deep = True)
+# Evaluate
+y_pred = model.predict(X_test)
+print(classification_report(y_test, y_pred))
 
-for i in range(white_trans.iloc[:,:-1].shape[1]):
-    red_trans.iloc[:,:-1].iloc[:,i]=st.boxcox(red_trans.iloc[:,:-1].iloc[:,i])
-    
+# Save model
+joblib.dump(model, "model.pkl")
+print("Model saved to model.pkl")
 
-red_trans["wine type"] = 0
-white_trans["wine type"] = 1
-
-# Concatenate both the dataset
-wine = pd.concat([red_trans, white_trans], axis = 0, ignore_index = False)
-
-# Split the the whole data into test and train
-X_train, X_test, y_train, y_test = train_test_split(wine.iloc[:, :-1], wine.iloc[:, -1], test_size=0.25, random_state=1)               
-
-
-# using neural networks
-
-# parameters initialization
-learning_rate = 0.001
-batch_size = X_train.shape[0] // 10
-epochs = 1000
-num_features = X_train.shape[1]
-epoch_list = []
-epochs_to_print = epochs // 10
-hidden_layer_units = 30
-avg_cost_list = []
-
-X_placeholder = tf.placeholder(tf.float32, [None, num_features], name='X')
-y_placeholder = tf.placeholder(tf.float32, [None, 2], name='y')
-# one_hot_encoder y_train_one_hot =
-label_one_hot = []
-for lable in y_train:
-    index = [1]*2
-    index[lable] = 0
-    label_one_hot.append(index)
-
-y_train_one_hot = label_one_hot
-
-label_one_hot = []
-for lable in y_test:
-    index = [1]*2
-    index[lable] = 0
-    label_one_hot.append(index)
-
-y_test_one_hot = label_one_hot
-
-# use 2 layer neural network
-
-
-
-merged_summaries = tf.summary.merge_all()
-# The tensorflow session is stared here:
-# with tf.Session() as sess:
-#     tf.global_variables_initializer().run
-#     cost = 0
-#     for i in range(epochs):
-#         # x batch y batch
-#         sample = np.random.choice(np.array())
-
-
-#         # Feeder
-#         feed_dict = {X_placeholder: X_batch, y_placeholder: y_batch}
-#         # Compute the cost
-#         _, current_cost = sess.run([training_step, cost], feed_dict)
-#         # Sum the overall cost
-#         cost += current_cost
